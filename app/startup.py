@@ -21,40 +21,40 @@ class Startup:
 
     Responsibilities
     ----------------
-    - Initialize components
-    - Load model
-    - Verify startup completed
+    - Validate startup
+    - Initialize services
+    - Load the language model
 
     Does NOT
     --------
-    - Perform inference
+    - Create dependencies
     - Manage conversations
+    - Perform inference
     """
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        model_loader: ModelLoader,
+    ) -> None:
 
-        self._model_loader = ModelLoader()
+        self._loader = model_loader
 
     # ==================================================
     # Initialize
     # ==================================================
 
-    def initialize(self) -> ModelLoader:
+    def initialize(self) -> None:
         """
         Initialize the application.
-
-        Returns
-        -------
-        ModelLoader
-            Loaded model loader.
         """
 
         logger.info("=" * 60)
         logger.info("Starting Manoj AI")
         logger.info("=" * 60)
 
-        self._model_loader.load()
+        if not self._loader.is_loaded:
+            self._loader.load()
 
-        logger.info("Startup completed successfully.")
-
-        return self._model_loader
+        logger.info(
+            "Startup completed successfully."
+        )

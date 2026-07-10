@@ -11,7 +11,7 @@ Author: Darshan
 
 from __future__ import annotations
 
-from typing import List, Dict
+from core.models import Message
 
 from llm.model_loader import ModelLoader
 from config.config import config
@@ -24,8 +24,8 @@ class Tokenizer:
     Responsibilities
     ----------------
     - Count tokens
-    - Estimate context usage
-    - Check context limits
+    - Count conversation tokens
+    - Check remaining context
 
     Does NOT
     --------
@@ -33,7 +33,10 @@ class Tokenizer:
     - Perform inference
     """
 
-    def __init__(self, model_loader: ModelLoader) -> None:
+    def __init__(
+        self,
+        model_loader: ModelLoader
+    ) -> None:
 
         self._loader = model_loader
 
@@ -46,9 +49,12 @@ class Tokenizer:
     # Count Tokens
     # ==================================================
 
-    def count(self, text: str) -> int:
+    def count(
+        self,
+        text: str
+    ) -> int:
         """
-        Count tokens in text.
+        Count tokens in a piece of text.
         """
 
         tokens = self._loader.model.tokenize(
@@ -58,15 +64,15 @@ class Tokenizer:
         return len(tokens)
 
     # ==================================================
-    # Count Conversation Tokens
+    # Conversation Tokens
     # ==================================================
 
     def conversation_tokens(
         self,
-        messages: List[Dict[str, str]]
+        messages: list[Message]
     ) -> int:
         """
-        Count tokens used by a conversation.
+        Count tokens used by an entire conversation.
         """
 
         total = 0
@@ -74,7 +80,7 @@ class Tokenizer:
         for message in messages:
 
             total += self.count(
-                message["content"]
+                message.content
             )
 
         return total
@@ -85,10 +91,10 @@ class Tokenizer:
 
     def remaining_context(
         self,
-        messages: List[Dict[str, str]]
+        messages: list[Message]
     ) -> int:
         """
-        Remaining available tokens.
+        Return remaining context window.
         """
 
         used = self.conversation_tokens(
@@ -101,19 +107,21 @@ class Tokenizer:
         )
 
     # ==================================================
-    # Context Full?
+    # Context Full
     # ==================================================
 
     def is_context_full(
         self,
-        messages: List[Dict[str, str]]
+        messages: list[Message]
     ) -> bool:
         """
-        Returns True if context limit reached.
+        Check whether the context window is full.
         """
 
         return (
-            self.conversation_tokens(messages)
+            self.conversation_tokens(
+                messages
+            )
             >= self._max_context
         )
 
@@ -123,4 +131,8 @@ class Tokenizer:
 
     @property
     def max_context(self) -> int:
+        """
+        Maximum supported context size.
+        """
+
         return self._max_context

@@ -3,7 +3,7 @@
 Manoj AI
 prompt_builder.py
 
-Builds chat messages for the language model.
+Builds chat requests for the language model.
 
 Author: Darshan
 ==========================================================
@@ -11,14 +11,17 @@ Author: Darshan
 
 from __future__ import annotations
 
-from typing import List, Dict
+from core.models import (
+    ChatRequest,
+    Message,
+)
 
 from config.config import config
 
 
 class PromptBuilder:
     """
-    Builds structured chat prompts.
+    Builds structured chat requests.
 
     Responsibilities
     ----------------
@@ -26,9 +29,10 @@ class PromptBuilder:
     - Add conversation history
     - Add current user message
 
-    Does NOT:
+    Does NOT
+    --------
     - Perform inference
-    - Manage memory
+    - Manage conversations
     - Load models
     """
 
@@ -40,42 +44,26 @@ class PromptBuilder:
         )
 
     # ==================================================
-    # Build Prompt
+    # Build Request
     # ==================================================
 
     def build(
         self,
-        conversation: List[Dict[str, str]],
-        user_message: str
-    ) -> List[Dict[str, str]]:
-        """
-        Build chat messages for the model.
+        conversation: list[Message],
+        user_message: str,
+    ) -> ChatRequest:
 
-        Parameters
-        ----------
-        conversation
-            Previous conversation.
-
-        user_message
-            Current user input.
-
-        Returns
-        -------
-        list
-            Chat messages.
-        """
-
-        messages: List[Dict[str, str]] = []
+        messages: list[Message] = []
 
         # --------------------------------------------
         # System Prompt
         # --------------------------------------------
 
         messages.append(
-            {
-                "role": "system",
-                "content": self._system_prompt
-            }
+            Message(
+                role="system",
+                content=self._system_prompt,
+            )
         )
 
         # --------------------------------------------
@@ -89,10 +77,12 @@ class PromptBuilder:
         # --------------------------------------------
 
         messages.append(
-            {
-                "role": "user",
-                "content": user_message
-            }
+            Message(
+                role="user",
+                content=user_message,
+            )
         )
 
-        return messages
+        return ChatRequest(
+            messages=messages
+        )

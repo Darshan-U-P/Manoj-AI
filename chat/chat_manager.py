@@ -13,9 +13,17 @@ from __future__ import annotations
 
 from chat.conversation import Conversation
 from chat.formatter import Formatter
+
+from core.models import (
+    ChatRequest,
+    ChatResponse,
+    Message,
+)
+
 from llm.prompt_builder import PromptBuilder
 from llm.inference import InferenceEngine
 from llm.tokenizer import Tokenizer
+
 from system.logger import logger
 from system.exceptions import ChatError
 
@@ -26,23 +34,23 @@ class ChatManager:
 
     Responsibilities
     ----------------
-    - Receive user messages
+    - Accept user input
     - Maintain conversation
-    - Build prompts
+    - Build requests
     - Run inference
-    - Display responses
+    - Display output
 
     Does NOT
     --------
+    - Generate text
     - Load models
-    - Build UI
-    - Handle startup/shutdown
+    - Store memory
     """
 
     def __init__(
         self,
         inference: InferenceEngine,
-        tokenizer: Tokenizer
+        tokenizer: Tokenizer,
     ) -> None:
 
         self._conversation = Conversation()
@@ -56,62 +64,71 @@ class ChatManager:
         self._tokenizer = tokenizer
 
     # ==================================================
-    # Banner
+    # Start
     # ==================================================
 
     def start(self) -> None:
 
         self._formatter.banner()
 
-        self._formatter.system(
-            "Type 'exit' to quit."
+        self._formatter.message(
+            Message(
+                role="system",
+                content="Type 'exit' to quit."
+            )
         )
 
     # ==================================================
-    # Process Message
+    # Process
     # ==================================================
 
     def process(
         self,
-        user_message: str
-    ) -> str:
-        """
-        Process one user message.
-
-        Returns
-        -------
-        Assistant response.
-        """
+        user_text: str,
+    ) -> ChatResponse:
 
         try:
 
-            logger.info("Processing user message.")
-
-            history = self._conversation.get_messages()
-
-            messages = self._builder.build(
-                history,
-                user_message
+            logger.info(
+                "Processing user message."
             )
 
-            if self._tokenizer.is_context_full(
-                messages
-            ):
+            request: ChatRequest = (
+                self._builder.build(
+                    self._conversation.messages,
+                    user_text,
+                )
+            )
 
-                self._formatter.system(
-                    "Conversation context is full."
+            remaining = (
+                self._tokenizer.remaining_context(
+                    request.messages
+                )
+            )
+
+            if remaining <= 0:
+
+                self._formatter.message(
+                    Message(
+                        role="system",
+                        content=(
+                            "Conversation context is full."
+                        )
+                    )
                 )
 
-            response = self._inference.generate(
-                messages
+            response = (
+                self._inference.generate(
+                    request
+                )
             )
 
             self._conversation.add_user(
-                user_message
+                user_text
             )
 
-            self._conversation.add_assistant(
-                response
+            self._conversation.add(
+                response.message
             )
 
             logger.info(
@@ -131,7 +148,7 @@ class ChatManager:
             ) from error
 
     # ==================================================
-    # Conversation
+    # Clear
     # ==================================================
 
     def clear(self) -> None:
@@ -143,7 +160,7 @@ class ChatManager:
         )
 
     # ==================================================
-    # Interactive Loop
+    # Run
     # ==================================================
 
     def run(self) -> None:
@@ -152,12 +169,14 @@ class ChatManager:
 
         while True:
 
-            user = input("\nYou: ").strip()
+            user = input(
+                "\nYou: "
+            ).strip()
 
             if user.lower() in (
                 "exit",
                 "quit",
-                "bye"
+                "bye",
             ):
                 break
 
@@ -166,12 +185,12 @@ class ChatManager:
 
             try:
 
-                reply = self.process(
+                response = self.process(
                     user
                 )
 
-                self._formatter.assistant(
-                    reply
+                self._formatter.message(
+                    response.message
                 )
 
             except ChatError as error:

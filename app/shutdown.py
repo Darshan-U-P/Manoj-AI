@@ -12,6 +12,7 @@ Author: Darshan
 from __future__ import annotations
 
 from llm.model_loader import ModelLoader
+
 from system.logger import logger
 
 
@@ -23,36 +24,39 @@ class Shutdown:
     ----------------
     - Release resources
     - Unload model
-    - Perform cleanup
+    - Cleanup
 
     Does NOT
     --------
+    - Create dependencies
+    - Manage chat
     - Perform inference
-    - Manage conversations
     """
 
     def __init__(
         self,
-        model_loader: ModelLoader
+        model_loader: ModelLoader,
     ) -> None:
 
-        self._model_loader = model_loader
+        self._loader = model_loader
 
     # ==================================================
-    # Shutdown
+    # Execute
     # ==================================================
 
     def execute(self) -> None:
-        """
-        Perform graceful shutdown.
-        """
 
         logger.info("=" * 60)
         logger.info("Shutting down Manoj AI")
 
-        if self._model_loader.is_loaded:
-            self._model_loader.unload()
+        if self._loader.is_loaded:
 
-        logger.info("Cleanup completed.")
+            self._loader.unload()
+
+        logger.info(
+            "Cleanup completed."
+        )
+
         logger.info("Goodbye!")
+
         logger.info("=" * 60)

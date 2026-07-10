@@ -14,10 +14,8 @@ from __future__ import annotations
 from app.startup import Startup
 from app.shutdown import Shutdown
 
-from llm.inference import InferenceEngine
-from llm.tokenizer import Tokenizer
-
-from chat.chat_manager import ChatManager
+from core.container import Container
+from core.lifecycle import Lifecycle
 
 from system.logger import logger
 
@@ -28,81 +26,51 @@ class Application:
 
     Responsibilities
     ----------------
-    - Startup
-    - Dependency wiring
-    - Chat loop
-    - Shutdown
+    - Coordinate application lifecycle
+    - Start services
+    - Run chat
+    - Shutdown services
 
     Does NOT
     --------
+    - Create dependencies
     - Perform inference
-    - Build prompts
-    - Store conversations
+    - Manage conversations
     """
 
     def __init__(self) -> None:
 
-        self._startup = Startup()
+        self._container = Container()
 
-        self._shutdown = None
-
-        self._model_loader = None
-
-        self._tokenizer = None
-
-        self._inference = None
-
-        self._chat = None
+        self._lifecycle = Lifecycle()
 
     # ==================================================
     # Run
     # ==================================================
 
     def run(self) -> None:
-        """
-        Run Manoj AI.
-        """
 
         try:
 
-            # ----------------------------------------
-            # Startup
-            # ----------------------------------------
+            self._lifecycle.initialize()
 
-            self._model_loader = (
-                self._startup.initialize()
+            startup: Startup = (
+                self._container.startup()
             )
 
-            # ----------------------------------------
-            # Core Components
-            # ----------------------------------------
+            startup.initialize()
 
-            self._tokenizer = Tokenizer(
-                self._model_loader
-            )
-
-            self._inference = InferenceEngine(
-                self._model_loader
-            )
-
-            self._chat = ChatManager(
-                self._inference,
-                self._tokenizer
-            )
-
-            self._shutdown = Shutdown(
-                self._model_loader
-            )
+            self._lifecycle.start()
 
             logger.info(
                 "Application initialized."
             )
 
-            # ----------------------------------------
-            # Start Chat
-            # ----------------------------------------
+            chat = (
+                self._container.chat_manager()
+            )
 
-            self._chat.run()
+            chat.run()
 
         except KeyboardInterrupt:
 
@@ -112,12 +80,20 @@ class Application:
 
         except Exception:
 
+            self._lifecycle.error()
+
             logger.exception(
                 "Fatal application error."
             )
 
         finally:
 
-            if self._shutdown is not None:
+            self._lifecycle.stopping()
 
-                self._shutdown.execute()
+            shutdown: Shutdown = (
+                self._container.shutdown()
+            )
+
+            shutdown.execute()
+
+            self._lifecycle.stop()

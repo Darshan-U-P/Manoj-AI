@@ -11,8 +11,7 @@ Author: Darshan
 
 from __future__ import annotations
 
-from typing import Dict, List
-
+from core.models import Message
 from config.config import config
 
 
@@ -23,8 +22,8 @@ class Conversation:
     Responsibilities
     ----------------
     - Store messages
+    - Return messages
     - Clear history
-    - Return conversation
     - Enforce history limit
 
     Does NOT
@@ -36,7 +35,7 @@ class Conversation:
 
     def __init__(self) -> None:
 
-        self._messages: List[Dict[str, str]] = []
+        self._messages: list[Message] = []
 
         self._history_limit = config.get(
             "chat",
@@ -44,45 +43,64 @@ class Conversation:
         )
 
     # ==================================================
-    # Add User Message
+    # Add Message
     # ==================================================
 
-    def add_user(self, message: str) -> None:
+    def add(
+        self,
+        message: Message
+    ) -> None:
+        """
+        Add a message to the conversation.
+        """
 
-        self._messages.append(
-            {
-                "role": "user",
-                "content": message
-            }
-        )
+        self._messages.append(message)
 
         self._trim()
 
     # ==================================================
-    # Add Assistant Message
+    # Add User
     # ==================================================
 
-    def add_assistant(self, message: str) -> None:
+    def add_user(
+        self,
+        text: str
+    ) -> None:
 
-        self._messages.append(
-            {
-                "role": "assistant",
-                "content": message
-            }
+        self.add(
+            Message(
+                role="user",
+                content=text,
+            )
         )
 
-        self._trim()
-
     # ==================================================
-    # Get Conversation
+    # Add Assistant
     # ==================================================
 
-    def get_messages(self) -> List[Dict[str, str]]:
+    def add_assistant(
+        self,
+        text: str
+    ) -> None:
+
+        self.add(
+            Message(
+                role="assistant",
+                content=text,
+            )
+        )
+
+    # ==================================================
+    # Messages
+    # ==================================================
+
+    @property
+    def messages(self) -> list[Message]:
 
         return self._messages.copy()
 
     # ==================================================
-    # Clear Conversation
+    # Clear
     # ==================================================
 
     def clear(self) -> None:
@@ -90,7 +108,7 @@ class Conversation:
         self._messages.clear()
 
     # ==================================================
-    # Conversation Length
+    # Size
     # ==================================================
 
     @property
@@ -99,7 +117,7 @@ class Conversation:
         return len(self._messages)
 
     # ==================================================
-    # Empty?
+    # Empty
     # ==================================================
 
     @property
@@ -108,13 +126,22 @@ class Conversation:
         return len(self._messages) == 0
 
     # ==================================================
-    # Trim History
+    # Last Message
+    # ==================================================
+
+    @property
+    def last(self) -> Message | None:
+
+        if self.is_empty:
+            return None
+
+        return self._messages[-1]
+
+    # ==================================================
+    # Trim
     # ==================================================
 
     def _trim(self) -> None:
-        """
-        Keep only the newest messages.
-        """
 
         if len(self._messages) <= self._history_limit:
             return

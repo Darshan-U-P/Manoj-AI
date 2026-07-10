@@ -3,7 +3,7 @@
 Manoj AI
 inference.py
 
-Handles text generation using the loaded language model.
+Inference engine for the language model.
 
 Author: Darshan
 ==========================================================
@@ -13,63 +13,91 @@ from __future__ import annotations
 
 from typing import Any
 
-from llm.model_loader import ModelLoader
 from config.config import config
+
+from core.interfaces import LLMInterface
+from core.models import (
+    ChatRequest,
+    ChatResponse,
+    Message,
+)
+
+from llm.model_loader import ModelLoader
+
+from system.exceptions import (
+    ModelInferenceError,
+)
+
 from system.logger import logger
-from system.exceptions import ModelInferenceError
 
 
-class InferenceEngine:
+class InferenceEngine(LLMInterface):
     """
-    Performs inference using the loaded model.
+    Handles all text generation.
 
-    This class does NOT:
-        - Load models
-        - Build prompts
-        - Manage conversations
+    Responsibilities
+    ----------------
+    - Generate responses
+    - Apply generation settings
+    - Convert model output into ChatResponse
 
-    It only generates responses.
+    Does NOT
+    --------
+    - Load models
+    - Manage conversations
+    - Build prompts
     """
 
-    def __init__(self, model_loader: ModelLoader) -> None:
+    def __init__(
+        self,
+        model_loader: ModelLoader,
+    ) -> None:
 
         self._loader = model_loader
 
     # ==================================================
-    # Generate Response
+    # Compatibility
+    # ==================================================
+
+    def load(self) -> None:
+        """
+        Forward to ModelLoader.
+        """
+        self._loader.load()
+
+    def unload(self) -> None:
+        """
+        Forward to ModelLoader.
+        """
+        self._loader.unload()
+
+    # ==================================================
+    # Generate
     # ==================================================
 
     def generate(
         self,
-        messages: list[dict[str, str]]
-    ) -> str:
-        """
-        Generate a response from the language model.
-
-        Parameters
-        ----------
-        messages
-            OpenAI-style chat messages.
-
-        Returns
-        -------
-        str
-            Assistant response.
-        """
+        request: ChatRequest,
+    ) -> ChatResponse:
 
         if not self._loader.is_loaded:
             raise ModelInferenceError(
                 "Model is not loaded."
             )
 
-        logger.info("Starting inference...")
+        logger.info(
+            "Starting inference..."
+        )
 
         try:
 
             response: dict[str, Any] = (
                 self._loader.model.create_chat_completion(
 
-                    messages=messages,
+                    messages=[
+                        message.to_dict()
+                        for message in request.messages
+                    ],
 
                     temperature=config.get(
                         "model",
@@ -96,17 +124,26 @@ class InferenceEngine:
                         "max_tokens"
                     ),
 
-                    stream=False
+                    stream=False,
                 )
             )
 
-            logger.info("Inference completed.")
-
-            return (
+            text = (
                 response["choices"][0]
                 ["message"]
                 ["content"]
                 .strip()
+            )
+
+            logger.info(
+                "Inference completed."
+            )
+
+            return ChatResponse(
+                message=Message(
+                    role="assistant",
+                    content=text,
+                )
             )
 
         except Exception as error:

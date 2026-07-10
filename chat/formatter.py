@@ -3,7 +3,7 @@
 Manoj AI
 formatter.py
 
-Console output formatter.
+Console formatter.
 
 Author: Darshan
 ==========================================================
@@ -11,29 +11,35 @@ Author: Darshan
 
 from __future__ import annotations
 
-from colorama import Fore, Style, init
+from colorama import (
+    Fore,
+    Style,
+    init,
+)
+
+from core.models import Message
 
 from config.config import config
 
-# Initialize colorama
+# Initialize Colorama
 init(autoreset=True)
 
 
 class Formatter:
     """
-    Formats and prints chat messages.
+    Formats console output.
 
     Responsibilities
     ----------------
-    - Display user messages
-    - Display assistant messages
-    - Display system messages
+    - Display messages
     - Display errors
+    - Display system messages
+    - Display banner
 
     Does NOT
     --------
-    - Store conversations
-    - Generate AI responses
+    - Manage conversations
+    - Generate responses
     """
 
     def __init__(self) -> None:
@@ -44,10 +50,14 @@ class Formatter:
         )
 
     # ==================================================
-    # Internal Helper
+    # Internal
     # ==================================================
 
-    def _color(self, color: str, text: str) -> str:
+    def _color(
+        self,
+        color: str,
+        text: str,
+    ) -> str:
 
         if not self._use_color:
             return text
@@ -55,41 +65,40 @@ class Formatter:
         return color + text + Style.RESET_ALL
 
     # ==================================================
-    # User
+    # Display Message
     # ==================================================
 
-    def user(self, message: str) -> None:
+    def message(
+        self,
+        message: Message,
+    ) -> None:
+
+        role = message.role.lower()
+
+        if role == "user":
+
+            color = Fore.CYAN
+            prefix = "You"
+
+        elif role == "assistant":
+
+            color = Fore.GREEN
+            prefix = "Manoj"
+
+        elif role == "system":
+
+            color = Fore.YELLOW
+            prefix = "System"
+
+        else:
+
+            color = Fore.WHITE
+            prefix = role.capitalize()
 
         print(
             self._color(
-                Fore.CYAN,
-                f"\nYou: {message}"
-            )
-        )
-
-    # ==================================================
-    # Assistant
-    # ==================================================
-
-    def assistant(self, message: str) -> None:
-
-        print(
-            self._color(
-                Fore.GREEN,
-                f"\nManoj: {message}"
-            )
-        )
-
-    # ==================================================
-    # System
-    # ==================================================
-
-    def system(self, message: str) -> None:
-
-        print(
-            self._color(
-                Fore.YELLOW,
-                f"\nSystem: {message}"
+                color,
+                f"\n{prefix}: {message.content}"
             )
         )
 
@@ -97,12 +106,15 @@ class Formatter:
     # Error
     # ==================================================
 
-    def error(self, message: str) -> None:
+    def error(
+        self,
+        text: str,
+    ) -> None:
 
         print(
             self._color(
                 Fore.RED,
-                f"\nError: {message}"
+                f"\nError: {text}"
             )
         )
 
