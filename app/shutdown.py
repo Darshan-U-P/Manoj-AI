@@ -1,0 +1,58 @@
+"""
+==========================================================
+Manoj AI
+shutdown.py
+
+Application shutdown sequence.
+
+Author: Darshan
+==========================================================
+"""
+
+from __future__ import annotations
+
+from llm.model_loader import ModelLoader
+from system.logger import logger
+
+
+class Shutdown:
+    """
+    Handles application shutdown.
+
+    Responsibilities
+    ----------------
+    - Release resources
+    - Unload model
+    - Perform cleanup
+
+    Does NOT
+    --------
+    - Perform inference
+    - Manage conversations
+    """
+
+    def __init__(
+        self,
+        model_loader: ModelLoader
+    ) -> None:
+
+        self._model_loader = model_loader
+
+    # ==================================================
+    # Shutdown
+    # ==================================================
+
+    def execute(self) -> None:
+        """
+        Perform graceful shutdown.
+        """
+
+        logger.info("=" * 60)
+        logger.info("Shutting down Manoj AI")
+
+        if self._model_loader.is_loaded:
+            self._model_loader.unload()
+
+        logger.info("Cleanup completed.")
+        logger.info("Goodbye!")
+        logger.info("=" * 60)

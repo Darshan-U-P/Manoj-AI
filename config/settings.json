@@ -1,0 +1,45 @@
+{
+    "application": {
+        "name": "Manoj AI",
+        "version": "0.1.0",
+        "developer": "Darshan",
+        "debug": true
+    },
+
+    "model": {
+        "name": "Qwen3-4B-Instruct-2507-Q4_K_M",
+        "path": "models/base/Qwen3-4B-Instruct-2507-Q4_K_M.gguf",
+        "context_size": 4096,
+        "max_tokens": 512,
+        "gpu_layers": -1,
+        "threads": 8,
+        "batch_size": 512,
+        "temperature": 0.7,
+        "top_p": 0.9,
+        "top_k": 40,
+        "repeat_penalty": 1.1,
+        "last_n_tokens": 64,
+        "seed": -1,
+        "verbose": false
+    },
+
+    "chat": {
+        "system_prompt": "You are Manoj AI, a helpful, intelligent, offline personal assistant.",
+        "history_limit": 20,
+        "stream": true,
+        "show_thinking": false
+    },
+
+    "logging": {
+        "enabled": true,
+        "level": "INFO",
+        "save_to_file": true,
+        "log_directory": "logs"
+    },
+
+    "console": {
+        "colored_output": true,
+        "show_banner": true,
+        "show_time": true
+    }
+}
